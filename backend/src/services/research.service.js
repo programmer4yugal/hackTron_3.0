@@ -29,74 +29,9 @@ Return ONLY valid JSON:
       });
     } catch (error) {
       console.error('Research API error:', formatOpenRouterError(error));
-      return getFallbackResearch(userType);
+      throw new Error('Research generation failed');
     }
   }
 };
-
-function getFallbackResearch(userType) {
-  const insights = {
-    student: {
-      painPoint: 'Lack of real-world project experience',
-      behavior: 'Learn from tutorials and open-source',
-      willingness: 'Prefer affordable or free tools'
-    },
-    founder: {
-      painPoint: 'Need rapid validation and market insights',
-      behavior: 'Customer research and analytics review',
-      willingness: 'Invest in faster decision-making'
-    },
-    creator: {
-      painPoint: 'Time spent on planning reduces creation time',
-      behavior: 'Use content calendars and analytics',
-      willingness: 'Pay for monetization enablement'
-    }
-  };
-
-  return {
-    marketTrends: [
-      'Growing demand for integrated tools',
-      'AI adoption accelerating',
-      'User preference for simplicity over bloatware'
-    ],
-    competitors: [
-      { name: 'ChatGPT', strength: 'Versatile AI', weakness: 'Not business-focused' },
-      { name: 'Notion', strength: 'Flexible', weakness: 'Steep learning curve' },
-      { name: 'Industry incumbents', strength: 'Established', weakness: 'Expensive' }
-    ],
-    userInsights: insights[userType] || insights.student,
-    marketGap: 'No unified tool for idea validation and execution',
-    pricingStrategy: getPricingStrategy(userType),
-    gtmStrategy: 'Start with free tier, upsell to premium',
-    estimatedMarketSize: '$2B+ opportunity'
-  };
-}
-
-function getPricingStrategy(userType) {
-  const pricing = {
-    student: 'Freemium - 1 free analysis/month, $10/mo unlimited',
-    founder: 'SaaS - $49/mo (Starter) to $199/mo (Pro)',
-    creator: 'Subscription - $20/mo (Basic) to $80/mo (Pro)'
-  };
-  return pricing[userType] || pricing.student;
-}
-
-function getGTMStrategy(userType) {
-  const strategies = {
-    student: 'University partnerships, Discord/GitHub communities, viral loops',
-    founder: 'Y Combinator network, startup communities, Product Hunt',
-    creator: 'Influencer partnerships, content creator networks, YouTube'
-  };
-  return strategies[userType] || strategies.student;
-}
-
-function getMarketEstimate(userType) {
-  const estimates = {
-    student: { size: '$2-3B', addressable: '$400M', capture: '$40M' },
-    founder: { size: '$5-8B', addressable: '$1.5B', capture: '$150M' },
-    creator: { size: '$10B+', addressable: '$2B', capture: '$200M' }
-  };
-  return estimates[userType] || estimates.student;
-}
 
 module.exports = researchService;

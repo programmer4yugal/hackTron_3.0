@@ -41,41 +41,9 @@ Return ONLY valid JSON:
       };
     } catch (error) {
       console.error('Validation API error:', formatOpenRouterError(error));
-      return getFallbackValidation(interrogation, userType);
+      throw new Error('Validation generation failed');
     }
   }
 };
-
-function getFallbackValidation(interrogation, userType) {
-  let score = 6;
-  
-  if (interrogation.uniqueValue && interrogation.uniqueValue.length > 20) score += 1;
-  if (interrogation.competitors && interrogation.competitors.length > 0) score += 0.5;
-  if (userType === 'founder') score += 1;
-  
-  score = Math.min(Math.max(score, 1), 10);
-  const decision = score >= 6 ? 'BUILD' : 'KILL';
-
-  return {
-    score,
-    decision,
-    confidence: Math.round((score / 10) * 100),
-    reasoning: decision === 'BUILD' 
-      ? 'Clear market need with viable execution path'
-      : 'Needs more validation before committing',
-    metrics: {
-      marketFit: Math.floor(score * 0.9),
-      technicalFeasibility: Math.floor(score * 0.8),
-      userClarity: Math.floor(score * 0.85),
-      competitiveAdvantage: Math.floor(score * 0.75)
-    },
-    recommendations: [
-      'Validate with target users',
-      'Define MVP clearly',
-      'Research competitors',
-      decision === 'BUILD' ? 'Prioritize execution' : 'Consider pivoting or iterating'
-    ]
-  };
-}
 
 module.exports = validationService;

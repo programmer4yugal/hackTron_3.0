@@ -26,28 +26,9 @@ Return ONLY valid JSON with this exact structure (no markdown, no extra text):
       });
     } catch (error) {
       console.error('Interrogation API error:', formatOpenRouterError(error));
-      return getFallbackInterrogation(idea, userType);
+      throw new Error('Interrogation generation failed');
     }
   }
 };
-
-function getFallbackInterrogation(idea, userType) {
-  const targetUsers = {
-    student: ['CS Students', 'Bootcamp Grads', 'Junior Developers'],
-    founder: ['Early-stage Founders', 'Solo Entrepreneurs', 'Idea Generators'],
-    creator: ['Content Creators', 'YouTubers', 'Digital Entrepreneurs']
-  };
-
-  return {
-    problem: `Solving challenges around: ${idea.slice(0, 30)}...`,
-    targetUsers: targetUsers[userType] || targetUsers.student,
-    uniqueValue: 'Integrated solution with faster execution',
-    marketSize: { TAM: '$2B+', SAM: '$500M', SOM: '$50M' },
-    competitors: ['Existing solutions in space'],
-    riskFactors: ['Market adoption', 'Execution timeline'],
-    assumptions: ['Users will pay', 'Market demand exists'],
-    followupQuestions: ['How validated is the problem?', 'What is your timeline?']
-  };
-}
 
 module.exports = interrogationService;

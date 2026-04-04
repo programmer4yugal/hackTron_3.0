@@ -67,7 +67,7 @@ const executeWorkflow = async (idea, userType) => {
         confidenceLevel: validation.confidence,
         decision: validation.decision
       },
-      nextSteps: generateNextSteps(userType, validation.score)
+      nextSteps: buildNextSteps(project, learning, validation)
     };
 
     return finalOutput;
@@ -78,32 +78,17 @@ const executeWorkflow = async (idea, userType) => {
   }
 };
 
-const generateNextSteps = (userType, score) => {
-  const baseSteps = [
-    'Review the execution roadmap',
-    'Setup development environment',
-    'Begin with Phase 1 tasks'
-  ];
+const buildNextSteps = (project, learning, validation) => {
+  const phaseSteps = (project?.phases || []).map((phase, index) => {
+    const name = phase?.phase || `Phase ${index + 1}`;
+    const focus = phase?.focus ? ` (${phase.focus})` : '';
+    return `Phase ${index + 1}: ${name}${focus}`;
+  });
 
-  const userTypeSteps = {
-    student: [
-      'Enroll in the learning path',
-      'Build alongside the course',
-      'Share progress with mentors'
-    ],
-    founder: [
-      'Schedule investor meetings',
-      'Validate with target users',
-      'Set up cap table'
-    ],
-    creator: [
-      'Create content outline',
-      'Begin content production',
-      'Build community'
-    ]
-  };
+  const milestoneSteps = (learning?.milestones || []).slice(0, 3).map((milestone) => `${milestone}`);
+  const recommendationSteps = (validation?.recommendations || []).slice(0, 2).map((item) => `${item}`);
 
-  return [...baseSteps, ...(userTypeSteps[userType] || [])];
+  return [...phaseSteps, ...milestoneSteps, ...recommendationSteps];
 };
 
 module.exports = {
