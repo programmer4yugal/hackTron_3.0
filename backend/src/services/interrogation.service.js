@@ -1,47 +1,76 @@
+const axios = require('axios');
+
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'YOUR_OPENAI_API_KEY_HERE';
+const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+
 const interrogationService = {
   interrogateIdea: async (idea, userType) => {
-    // Simple processing - no need to overthink
-    await new Promise(resolve => setTimeout(resolve, 250));
+    try {
+      const prompt = `Analyze this business idea: "${idea}"
+      
+User type: ${userType}
 
-    const targetUsers = {
-      student: ['CS Students', 'Bootcamp Grads', 'Junior Developers'],
-      founder: ['Early-stage Founders', 'Solo Entrepreneurs', 'Idea Generators'],
-      creator: ['Content Creators', 'YouTubers', 'Digital Entrepreneurs']
-    };
+Return ONLY valid JSON with this exact structure (no markdown, no extra text):
+{
+  "problem": "Core problem being solved",
+  "targetUsers": ["user1", "user2", "user3"],
+  "uniqueValue": "What makes this different",
+  "marketSize": {"TAM": "$XB", "SAM": "$YB", "SOM": "$ZB"},
+  "competitors": ["competitor1", "competitor2"],
+  "riskFactors": ["risk1", "risk2", "risk3"],
+  "assumptions": ["assumption1", "assumption2"],
+  "followupQuestions": ["question1", "question2"]
+}`;
 
-    return {
-      problem: `The core issue: ${idea.toLowerCase().includes('ai') ? 'manual processes slowing down work' : 'inefficient workflows'}`,
-      targetUsers: targetUsers[userType] || targetUsers.student,
-      uniqueValue: 'Faster validation, clearer roadmap, less wasted time',
-      marketSize: estimateMarketSize(userType),
-      competitors: ['ChatGPT', 'Notion', 'Manual process'],
-      riskFactors: ['Market saturation', 'Execution complexity', 'User adoption'],
-      assumptions: [
-        'Target users face this problem regularly',
-        'They will pay for a solution',
-        'The solution can be built in reasonable time'
-      ],
-      followupQuestions: getFollowupQuestions(userType)
-    };
+      const response = await axios.post(OPENAI_ENDPOINT, {
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a business analyst. Respond with ONLY valid JSON, no markdown.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 500
+      }, {
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const content = response.data.choices[0].message.content.trim();
+      const result = JSON.parse(content);
+      
+      return result;
+    } catch (error) {
+      console.error('Interrogation API error:', error.message);
+      return getFallbackInterrogation(idea, userType);
+    }
   }
 };
 
-function estimateMarketSize(userType) {
-  const sizes = {
-    student: { TAM: '$2B', SAM: '$400M', SOM: '$40M' },
-    founder: { TAM: '$5B', SAM: '$1.5B', SOM: '$150M' },
-    creator: { TAM: '$8B', SAM: '$2B', SOM: '$200M' }
+function getFallbackInterrogation(idea, userType) {
+  const targetUsers = {
+    student: ['CS Students', 'Bootcamp Grads', 'Junior Developers'],
+    founder: ['Early-stage Founders', 'Solo Entrepreneurs', 'Idea Generators'],
+    creator: ['Content Creators', 'YouTubers', 'Digital Entrepreneurs']
   };
-  return sizes[userType] || sizes.student;
-}
 
-function getFollowupQuestions(userType) {
-  const questions = {
-    student: ['How does this fit your portfolio?', 'Will you share with peers?'],
-    founder: ['What is your GTM?', 'Customer validation done?'],
-    creator: ['Current audience size?', 'Time spent planning?']
+  return {
+    problem: `Solving challenges around: ${idea.slice(0, 30)}...`,
+    targetUsers: targetUsers[userType] || targetUsers.student,
+    uniqueValue: 'Integrated solution with faster execution',
+    marketSize: { TAM: '$2B+', SAM: '$500M', SOM: '$50M' },
+    competitors: ['Existing solutions in space'],
+    riskFactors: ['Market adoption', 'Execution timeline'],
+    assumptions: ['Users will pay', 'Market demand exists'],
+    followupQuestions: ['How validated is the problem?', 'What is your timeline?']
   };
-  return questions[userType] || questions.student;
 }
 
 module.exports = interrogationService;

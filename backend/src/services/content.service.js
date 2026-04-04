@@ -1,101 +1,155 @@
+const axios = require('axios');
+
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'YOUR_OPENAI_API_KEY_HERE';
+const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+
 const contentService = {
   generateContent: async (interrogation, project, userType) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    try {
+      const ideaSummary = project.title || interrogation.uniqueValue;
+      const prompt = `Generate marketing content for: "${ideaSummary}"
+User type: ${userType}
+Problem: ${interrogation.problem}
+Target Users: ${interrogation.targetUsers.join(', ')}
 
-    const ideaSummary = project.title || interrogation.uniqueValue;
-    return {
-      pitchSummary: getPitch(ideaSummary, userType),
-      landingPageCopy: getLandingCopy(ideaSummary, userType),
-      socialPosts: getSocialPosts(ideaSummary, userType),
-      emailSequence: getEmailSequence(userType),
-      marketingAngles: getAngles(userType),
-      contentAssets: getAssets(userType),
-      tagline: getTagline(ideaSummary, userType),
-      coreMessage: getCoreMessage(userType)
-    };
+Return ONLY valid JSON:
+{
+  "pitchSummary": "One sentence pitch",
+  "landingPageCopy": {"headline": "Headline", "cta": "Call to action"},
+  "socialPosts": ["post1", "post2", "post3"],
+  "emailSequence": [{"day": 1, "subject": "Subject", "preview": "Preview"}],
+  "marketingAngles": ["angle1", "angle2"],
+  "contentAssets": ["asset1", "asset2"],
+  "tagline": "Short tagline",
+  "coreMessage": "Core value message"
+}`;
+
+      const response = await axios.post(OPENAI_ENDPOINT, {
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a marketing copywriter. Return ONLY valid JSON, no markdown.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.8,
+        max_tokens: 600
+      }, {
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const content = response.data.choices[0].message.content.trim();
+      const result = JSON.parse(content);
+      
+      return result;
+    } catch (error) {
+      console.error('Content generation API error:', error.message);
+      return getFallbackContent(project, userType);
+    }
   }
 };
 
-function getPitch(idea, userType) {
+function getFallbackContent(project, userType) {
+  const idea = project.title || 'Your Project';
+  
+  return {
+    pitchSummary: generatePitch(idea, userType),
+    landingPageCopy: generateLanding(idea, userType),
+    socialPosts: generateSocialPosts(idea, userType),
+    emailSequence: generateEmailSequence(userType),
+    marketingAngles: generateAngles(userType),
+    contentAssets: generateAssets(userType),
+    tagline: generateTagline(idea, userType),
+    coreMessage: getCoreMessage(userType)
+  };
+}
+
+function generatePitch(idea, userType) {
   const pitches = {
-    student: `"${idea}" is a portfolio project that helps you learn real development. Launch your career in 8 weeks.`,
-    founder: `We're building "${idea}" to solve a $10B problem. MVP done, raising seed round.`,
-    creator: `"${idea}" helps creators reach more people and earn sooner. Join 100K+ creators.`
+    student: `Build your portfolio with ${idea}. Launch your dev career in 8 weeks.`,
+    founder: `${idea} solves real market problems. MVP ready, scaling now.`,
+    creator: `${idea} helps creators earn more in less time.`
   };
   return pitches[userType] || pitches.student;
 }
 
-function getLandingCopy(idea, userType) {
+function generateLanding(idea, userType) {
   const copy = {
-    student: { headline: `Build ${idea}. Launch Your Career.`, cta: 'Start Building' },
-    founder: { headline: `${idea} - Now Funded`, cta: 'Join Us' },
-    creator: { headline: `Create More. Earn More. With ${idea}.`, cta: 'Become Creator' }
+    student: { headline: `Build ${idea}. Get Hired.`, cta: 'Start Building' },
+    founder: { headline: `${idea} - Funded and Growing`, cta: 'Join Us' },
+    creator: { headline: `Create More. Earn More. ${idea}.`, cta: 'Get Started' }
   };
   return copy[userType] || copy.student;
 }
 
-function getSocialPosts(idea, userType) {
+function generateSocialPosts(idea, userType) {
   const posts = {
     student: [
-      `Just started building ${idea}. 8 weeks to portfolio-ready. #DevJourney`,
-      `Shipped MVP of ${idea}. Feels amazing. Open to feedback 🚀 #Coding`,
-      `Check out my project on GitHub: ${idea}`
+      `Building ${idea}. 8 weeks to portfolio-ready. #DevJourney`,
+      `MVP shipped. Open to feedback. #Coding`,
+      `Check it out on GitHub!`
     ],
     founder: [
-      `${idea} MVP is live. $X MRR in month 1. Raising seed round. DM for deck.`,
-      `${idea} just hit our first milestone. Solving a real problem for real people.`,
-      `We're on ProductHunt today - ${idea}! Would love your feedback`
+      `${idea} MVP is live. Raising seed round. DM for deck.`,
+      `Solving a real market gap with ${idea}.`,
+      `On ProductHunt today! #Startup`
     ],
     creator: [
-      `New content dropped: ${idea}. Link in bio 🎬 #Content`,
-      `POV: You just learned everything about ${idea} 📹✨`,
-      `FULL breakdown of ${idea}. Watch this: [link]`
+      `New: ${idea}. Link in bio 🎬`,
+      `Everything about ${idea}. Full breakdown 📹`,
+      `${idea} - Learn this in 5 minutes`
     ]
   };
   return posts[userType] || posts.student;
 }
 
-function getEmailSequence(userType) {
+function generateEmailSequence(userType) {
   const sequences = {
     student: [
-      { day: 1, subject: 'You\'re building what?', preview: 'Why this matters for your career...' },
-      { day: 3, subject: 'Setting up your environment', preview: 'Quick guide to save 2 hours...' },
-      { day: 7, subject: 'Halfway there! 🎉', preview: 'Look at what you\'ve built...' }
+      { day: 1, subject: 'Start your journey', preview: 'Why this matters for your career' },
+      { day: 3, subject: 'First milestone', preview: 'You\'re on track' }
     ],
     founder: [
-      { day: 1, subject: 'We raised $X seed round', preview: 'Join us as we scale...' },
-      { day: 2, subject: 'Why we\'re solving this', preview: 'Our story and unique position...' }
+      { day: 1, subject: 'Join the team', preview: 'We\'re scaling' },
+      { day: 2, subject: 'Our story', preview: 'How we got here' }
     ],
     creator: [
-      { day: 1, subject: 'Your 3-month content plan', preview: 'What to create to hit goals...' },
-      { day: 7, subject: 'Your earnings report', preview: 'You made $X this week...' }
+      { day: 1, subject: 'Your growth plan', preview: 'What to focus on' },
+      { day: 7, subject: 'Progress update', preview: 'You\'re crushing it' }
     ]
   };
   return sequences[userType] || sequences.student;
 }
 
-function getAngles(userType) {
+function generateAngles(userType) {
   const angles = {
-    student: ['Portfolio hack: Recruiter attention', 'Fast-track to senior roles', 'Join community'],
-    founder: ['$10B market, 2x growth', 'Team has 3 exits', '$X MRR in 3 months'],
-    creator: ['Earn on day 1', '50% less planning time', '100K+ creators on platform']
+    student: ['Build real portfolio', 'Get recruiter attention', 'Join dev community'],
+    founder: ['Fast market entry', 'Efficient scaling', 'Clear growth path'],
+    creator: ['Earn immediately', 'Save planning time', 'Reach more people']
   };
   return angles[userType] || angles.student;
 }
 
-function getAssets(userType) {
+function generateAssets(userType) {
   const assets = {
-    student: ['README template', 'Setup guide', 'Video walkthrough', 'GitHub template'],
-    founder: ['Pitch deck', '3-year financials', 'One-pager', 'Investor emails'],
-    creator: ['Content calendar', 'Thumbnails', 'Welcome emails', 'Social graphics']
+    student: ['Setup guide', 'GitHub template', 'Demo video', 'README template'],
+    founder: ['Pitch deck', 'Financial model', 'One-pager', 'Investor template'],
+    creator: ['Content calendar', 'Thumbnails', 'Promotional graphics', 'Email templates']
   };
   return assets[userType] || assets.student;
 }
 
-function getTagline(idea, userType) {
+function generateTagline(idea, userType) {
   const taglines = {
     student: `Build ${idea}. Get Hired.`,
-    founder: `${idea}. Funded.`,
+    founder: `${idea}. Scaled.`,
     creator: `${idea}. Get Paid.`
   };
   return taglines[userType] || `Build with ${idea}`;
