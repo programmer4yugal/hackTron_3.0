@@ -1,13 +1,14 @@
 const axios = require('axios');
+const { requestJson, formatOpenRouterError } = require('./openrouter.service');
 
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || 'YOUR_YOUTUBE_API_KEY_HERE';
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'YOUR_OPENAI_API_KEY_HERE';
-const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+const YOUTUBE_API_KEY = (process.env.YOUTUBE_API_KEY || '').trim().split(/\s+/)[0];
+const hasValidYouTubeKey = /^AIza[\w-]{20,}$/.test(YOUTUBE_API_KEY);
 
 const learningService = {
   createLearningPath: async (project, research, userType) => {
     try {
-      const prompt = `Create a learning path for: "${project.title}"
+      const projectTitle = project?.title || 'Project';
+      const prompt = `Create a learning path for: "${projectTitle}"
 User type: ${userType}
 Skills to develop: [${getSkillsList(userType)}]
 
@@ -25,40 +26,24 @@ Return ONLY valid JSON:
   "mentorship": {"type": "Mentor type", "value": "What they help with"}
 }`;
 
-      const response = await axios.post(OPENAI_ENDPOINT, {
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an education strategist. Return ONLY valid JSON, no markdown.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
+      const result = await requestJson({
+        systemPrompt: 'You are an education strategist. Return ONLY valid JSON, no markdown.',
+        userPrompt: prompt,
         temperature: 0.7,
-        max_tokens: 600
-      }, {
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
+        maxTokens: 600
       });
-
-      const content = response.data.choices[0].message.content.trim();
-      const result = JSON.parse(content);
       
       // Try to fetch real YouTube videos if API key is set
-      if (YOUTUBE_API_KEY !== 'YOUR_YOUTUBE_API_KEY_HERE') {
-        result.videoResources = await fetchYouTubeVideos(project.title, userType);
+      if (hasValidYouTubeKey) {
+        result.videoResources = await fetchYouTubeVideos(projectTitle, userType);
       } else {
-        result.videoResources = generateVideoFallback(project.title, userType);
+        console.warn('YouTube API key is missing or invalid format. Using video fallback.');
+        result.videoResources = generateVideoFallback(projectTitle, userType);
       }
       
       return result;
     } catch (error) {
-      console.error('Learning path API error:', error.message);
+      console.error('Learning path API error:', formatOpenRouterError(error));
       return getFallbackLearningPath(project, userType);
     }
   }
@@ -83,7 +68,7 @@ async function fetchYouTubeVideos(projectTitle, userType) {
       channel: item.snippet.channelTitle
     }));
   } catch (error) {
-    console.error('YouTube API error:', error.message);
+    console.error('YouTube API error:', error.response?.data?.error?.message || error.message);
     return generateVideoFallback(projectTitle, userType);
   }
 }

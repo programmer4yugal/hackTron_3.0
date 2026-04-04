@@ -1,7 +1,4 @@
-const axios = require('axios');
-
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'YOUR_OPENAI_API_KEY_HERE';
-const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+const { requestJson, formatOpenRouterError } = require('./openrouter.service');
 
 const contentService = {
   generateContent: async (interrogation, project, userType) => {
@@ -24,33 +21,14 @@ Return ONLY valid JSON:
   "coreMessage": "Core value message"
 }`;
 
-      const response = await axios.post(OPENAI_ENDPOINT, {
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a marketing copywriter. Return ONLY valid JSON, no markdown.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
+      return await requestJson({
+        systemPrompt: 'You are a marketing copywriter. Return ONLY valid JSON, no markdown.',
+        userPrompt: prompt,
         temperature: 0.8,
-        max_tokens: 600
-      }, {
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
+        maxTokens: 600
       });
-
-      const content = response.data.choices[0].message.content.trim();
-      const result = JSON.parse(content);
-      
-      return result;
     } catch (error) {
-      console.error('Content generation API error:', error.message);
+      console.error('Content generation API error:', formatOpenRouterError(error));
       return getFallbackContent(project, userType);
     }
   }

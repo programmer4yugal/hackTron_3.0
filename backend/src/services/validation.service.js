@@ -1,7 +1,4 @@
-const axios = require('axios');
-
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || 'YOUR_OPENAI_API_KEY_HERE';
-const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+const { requestJson, formatOpenRouterError } = require('./openrouter.service');
 
 const validationService = {
   validateIdea: async (interrogation, userType) => {
@@ -30,29 +27,12 @@ Return ONLY valid JSON:
   "recommendations": ["rec1", "rec2", "rec3"]
 }`;
 
-      const response = await axios.post(OPENAI_ENDPOINT, {
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a startup validator. Return ONLY valid JSON, no markdown.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
+      const result = await requestJson({
+        systemPrompt: 'You are a startup validator. Return ONLY valid JSON, no markdown.',
+        userPrompt: prompt,
         temperature: 0.7,
-        max_tokens: 400
-      }, {
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
+        maxTokens: 400
       });
-
-      const content = response.data.choices[0].message.content.trim();
-      const result = JSON.parse(content);
       
       return {
         ...result,
@@ -60,7 +40,7 @@ Return ONLY valid JSON:
         confidence: Math.min(Math.max(result.confidence, 0), 100)
       };
     } catch (error) {
-      console.error('Validation API error:', error.message);
+      console.error('Validation API error:', formatOpenRouterError(error));
       return getFallbackValidation(interrogation, userType);
     }
   }
