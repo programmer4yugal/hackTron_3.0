@@ -26,12 +26,29 @@ Return ONLY valid JSON:
   "risks": ["risk1","risk2","risk3"]
 }`;
 
-      return await requestJson({
+      const result = await requestJson({
         systemPrompt: 'You are a startup execution planner. Return ONLY valid JSON, no markdown.',
         userPrompt: prompt,
         temperature: 0.7,
         maxTokens: 700
       });
+
+      const steps = Array.isArray(result?.steps)
+        ? result.steps
+        : (result?.phases || []).map((phase, index) => {
+            const phaseName = phase?.phase || `Phase ${index + 1}`;
+            const duration = phase?.duration ? ` (${phase.duration})` : '';
+            const focus = phase?.focus ? ` - ${phase.focus}` : '';
+            return `${phaseName}${duration}${focus}`;
+          });
+
+      const roadmap = Array.isArray(result?.roadmap) ? result.roadmap : (result?.milestones || []);
+
+      return {
+        ...result,
+        steps,
+        roadmap
+      };
     } catch (error) {
       console.error('Project generation API error:', formatOpenRouterError(error));
       throw new Error('Project generation failed');

@@ -21,12 +21,29 @@ Return ONLY valid JSON:
   "coreMessage": "Core value message"
 }`;
 
-      return await requestJson({
+      const result = await requestJson({
         systemPrompt: 'You are a marketing copywriter. Return ONLY valid JSON, no markdown.',
         userPrompt: prompt,
         temperature: 0.8,
         maxTokens: 600
       });
+
+      const pitch =
+        result?.pitch ||
+        result?.pitchSummary ||
+        result?.coreMessage ||
+        result?.tagline ||
+        'No data available';
+
+      const socialPost =
+        result?.socialPost ||
+        (Array.isArray(result?.socialPosts) && result.socialPosts.length > 0 ? result.socialPosts[0] : 'No data available');
+
+      return {
+        ...result,
+        pitch,
+        socialPost
+      };
     } catch (error) {
       console.error('Content generation API error:', formatOpenRouterError(error));
       throw new Error('Content generation failed');

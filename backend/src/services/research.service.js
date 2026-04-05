@@ -21,12 +21,32 @@ Return ONLY valid JSON:
   "estimatedMarketSize": "$XB opportunity"
 }`;
 
-      return await requestJson({
+      const result = await requestJson({
         systemPrompt: 'You are a market researcher. Return ONLY valid JSON, no markdown.',
         userPrompt: prompt,
         temperature: 0.7,
         maxTokens: 500
       });
+
+      const trends = result?.trends || result?.marketTrends || [];
+      const competitors = Array.isArray(result?.competitors) ? result.competitors : [];
+      const insights = Array.isArray(result?.insights)
+        ? result.insights
+        : [
+            result?.userInsights?.painPoint,
+            result?.userInsights?.behavior,
+            result?.userInsights?.willingness,
+            result?.marketGap,
+            result?.pricingStrategy,
+            result?.gtmStrategy
+          ].filter(Boolean);
+
+      return {
+        ...result,
+        trends,
+        competitors,
+        insights
+      };
     } catch (error) {
       console.error('Research API error:', formatOpenRouterError(error));
       throw new Error('Research generation failed');

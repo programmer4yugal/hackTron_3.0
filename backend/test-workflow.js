@@ -10,7 +10,7 @@ ws.executeWorkflow('Next-gen productivity AI', 'founder').then(result => {
   console.log('Has pipeline property:', 'pipeline' in result);
   console.log('Pipeline:', result.pipeline);
   console.log('Stage:', result.stage);
-  console.log('Decision:', result.buildScore.decision);
+  console.log('Validation present:', Boolean(result?.executionPackage?.validation));
   console.log('\n=== Full Result Keys ===');
   console.log(Object.keys(result));
 }).catch(err => {
